@@ -74,6 +74,9 @@ input:focus{outline:0;border-bottom-color:var(--accent)}
 .ep[aria-pressed="true"],.mv[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--on)}
 .mv{margin:0 .4rem .6rem 0}
 .empty{color:var(--muted)}
+.card .cmain{background:none;border:0;padding:0;color:inherit;text-align:left;width:100%;display:block}
+.nxt{margin-top:.45rem;width:100%;padding:.4rem .3rem;border-radius:.6rem;border:1.5px solid var(--line);background:none;color:var(--ink);font-weight:600;font-size:.85rem}
+.nxt:active{background:var(--accent);color:var(--on)}
 .acts2{display:flex;gap:.4rem;flex-wrap:wrap}
 .prov{margin:.2rem 0 .6rem;font-size:.9rem;color:var(--accent);font-weight:600}
 .results .grow p.prov{display:block}
@@ -185,6 +188,7 @@ input:focus{outline:0;border-bottom-color:var(--accent)}
       <div id="lib"></div>
     </div>
     <div id="v-wish" class="screen" hidden>
+      <button class="btn" id="roll" style="margin:0 0 1rem">O que assistir hoje?</button>
       <div class="tabs scroll" id="chips2" role="group" aria-label="Filtrar por tipo"></div>
       <ul class="results" id="wish"></ul>
     </div>
@@ -290,7 +294,7 @@ onAuthStateChanged(auth,async u=>{
 /* dados */
 const curList=()=>lists.find(l=>l.id===cur);
 const lref=()=>doc(db,"lists",cur);
-const clean=it=>{const c={...it};delete c._l;return c};
+const clean=it=>{const c={...it};delete c._l;delete c._sh;delete c._names;return c};
 const put=it=>updateDoc(doc(db,"lists",it._l||cur),{["items."+it.key]:clean(it)}).catch(()=>say("Não foi possível salvar."));
 const del=(k,lid)=>updateDoc(doc(db,"lists",lid||cur),{["items."+k]:deleteField()}).catch(()=>say("Não foi possível remover."));
 
@@ -376,8 +380,8 @@ async function addItem(it,status,btn){
 }
 async function startWatch(it,btn){
   btn.disabled=true;
-  try{if(it.type==="tv")it.seasons=await seasonsOf(it.id);it.status="watch";it.added=Date.now();await put(it)}
-  catch(e){btn.disabled=false;say("Não foi possível carregar as temporadas.")}
+  try{if(it.type==="tv")it.seasons=await seasonsOf(it.id);it.status="watch";it.added=Date.now();await put(it);return true}
+  catch(e){btn.disabled=false;say("Não foi possível carregar as temporadas.");return false}
 }
 
 /* categorias, onde assistir e calendário */
@@ -448,16 +452,35 @@ $("ren").onclick=async()=>{
   const n=(prompt("Novo nome da lista",L.name)||"").trim();if(!n||n===L.name)return;
   try{await updateDoc(lref(),{name:n})}catch(e){say("Não foi possível renomear.")}
 };
+function nextOf(it){
+  if(it.type==="movie")return {label:"✓ Assisti",apply:()=>saveMovie(it,true)};
+  for(const se of (it.seasons||[])){
+    const arr=myProg(it,se),i=arr.indexOf(false);
+    if(i>=0)return {label:"✓ T"+se.n+" E"+(i+1),apply:()=>{const na=arr.slice();na[i]=true;return saveProg(it,se,na)}};
+  }
+  return null;
+}
 function drawShelf(items){
   const sh=$("shelf");sh.innerHTML="";$("hcount").textContent=items.length?"("+items.length+")":"";
   if(!items.length){sh.appendChild(el("p","empty","Nada em andamento. Busque um título e toque em Adicionar."));$("hdetail").innerHTML="";return}
   items.forEach(it=>{
-    const b=el("button","card");
-    if(it.poster){const im=el("img");im.src=IMG+it.poster;im.alt="";im.loading="lazy";b.appendChild(im)}else b.appendChild(el("div","ph"));
-    b.appendChild(el("b",null,it.title));
-    const c=tally(it),bar=el("div","bar"),f=el("i");f.style.width=(c[1]?c[0]/c[1]*100:0)+"%";bar.appendChild(f);b.appendChild(bar);
-    b.setAttribute("aria-label",it.title+", abrir detalhes");
-    b.onclick=()=>{hsel=hsel===it.key?null:it.key;render()};sh.appendChild(b);
+    const card=el("div","card"),m=el("button","cmain");
+    if(it.poster){const im=el("img");im.src=IMG+it.poster;im.alt="";im.loading="lazy";m.appendChild(im)}else m.appendChild(el("div","ph"));
+    m.appendChild(el("b",null,it.title));
+    const c=tally(it),bar=el("div","bar"),f=el("i");f.style.width=(c[1]?c[0]/c[1]*100:0)+"%";bar.appendChild(f);m.appendChild(bar);
+    m.setAttribute("aria-label",it.title+", abrir detalhes");
+    m.onclick=()=>{hsel=hsel===it.key?null:it.key;render()};
+    card.appendChild(m);
+    const nx=nextOf(it);
+    if(nx){
+      const nb=el("button","nxt",nx.label);nb.setAttribute("aria-label","Marcar como visto: "+it.title+" "+nx.label.replace("✓ ",""));
+      nb.onclick=()=>{
+        const lb=nx.label.replace("✓ ","");nx.apply();const t=tally(it);
+        toast(t[0]>=t[1]?"Você terminou "+it.title+"!":it.title+": "+lb+" visto");
+      };
+      card.appendChild(nb);
+    }
+    sh.appendChild(card);
   });
 }
 
@@ -476,9 +499,42 @@ function showPick(it){
   const pv=el("p","prov");sh.appendChild(pv);provText(it,pv);
   const acts=el("div","eps"),a=el("button","btn","Adicionar"),w=el("button","ghost","Quero ver"),c=el("button","ghost","Fechar");
   a.onclick=()=>addItem(it,"watch",a);w.onclick=()=>addItem(it,"wish",w);c.onclick=closePick;
-  acts.appendChild(a);acts.appendChild(w);acts.appendChild(c);sh.appendChild(acts);
+  acts.appendChild(a);acts.appendChild(w);acts.appendChild(trailerBtn(it));acts.appendChild(c);sh.appendChild(acts);
   $("pickbox").hidden=false;
 }
+function trailerBtn(it){
+  const b=el("button","ghost","Trailer");
+  b.onclick=async()=>{
+    b.disabled=true;
+    try{
+      const r=await tmdb("/"+it.type+"/"+it.id+"/videos",{include_video_language:"pt,en,null"});
+      const v=(r.results||[]).filter(x=>x.site==="YouTube"&&x.type==="Trailer");
+      const k=v.find(x=>x.official&&x.iso_639_1==="pt")||v.find(x=>x.iso_639_1==="pt")||v.find(x=>x.official)||v[0];
+      if(k)window.open("https://www.youtube.com/watch?v="+k.key,"_blank","noopener");else toast("Sem trailer disponível.");
+    }catch(e){toast("Não foi possível abrir o trailer.")}
+    b.disabled=false;
+  };
+  return b;
+}
+let lastWish=[];
+function showRoll(){
+  if(!lastWish.length){toast("Sua lista de desejos está vazia.");return}
+  const it=lastWish[Math.floor(Math.random()*lastWish.length)];
+  const sh=$("sheet");sh.innerHTML="";
+  sh.appendChild(el("p","count","Que tal assistir hoje:"));
+  const row=el("div","row");
+  if(it.poster){const im=el("img","poster");im.src=IMG+it.poster;im.alt="";row.appendChild(im)}
+  const tx=el("div","grow");tx.appendChild(el("h2",null,it.title+(it.year?" ("+it.year+")":"")));tx.appendChild(el("p","count",catL(it)));
+  row.appendChild(tx);sh.appendChild(row);
+  if(it.overview)sh.appendChild(el("p","ov",it.overview));
+  const pv=el("p","prov");sh.appendChild(pv);provText(it,pv);
+  const acts=el("div","eps"),g=el("button","btn",it.type==="movie"?"Adicionar à lista":"Começar a assistir"),again=el("button","ghost","Sortear de novo"),c=el("button","ghost","Fechar");
+  g.onclick=async()=>{if(await startWatch(it,g)){closePick();toast("Boa sessão! Adicionado à sua lista.")}};
+  again.onclick=showRoll;c.onclick=closePick;
+  acts.appendChild(g);acts.appendChild(trailerBtn(it));acts.appendChild(again);acts.appendChild(c);sh.appendChild(acts);
+  $("pickbox").hidden=false;
+}
+$("roll").onclick=showRoll;
 function setWho(){const b=$("acct");if(b)b.textContent=dname||(user&&user.displayName)||"Conta"}
 async function renameMe(n){
   if(!n){toast("Digite um nome.");return}
@@ -564,12 +620,38 @@ $("allback").onclick=()=>go("cat");
 
 /* tela */
 function track(d,k){d.open=open.has(k);d.addEventListener("toggle",()=>{d.open?open.add(k):open.delete(k)})}
-function tally(it){if(it.type==="movie")return [it.seen?1:0,1];let t=0,w=0;(it.seasons||[]).forEach(s=>{t+=s.eps;s.seen.forEach(v=>{if(v)w++})});return [w,t]}
+const myProg=(it,se)=>{
+  if(!it._sh)return se.seen;
+  const s=(it.p&&it.p[user.uid]&&it.p[user.uid][se.n])||"";
+  return Array.from({length:se.eps},(_,i)=>s[i]==="1");
+};
+const progOf=(it,uid)=>{
+  let w=0,t=0;
+  (it.seasons||[]).forEach(se=>{t+=se.eps;const s=(it.p&&it.p[uid]&&it.p[uid][se.n])||"";for(let i=0;i<se.eps;i++)if(s[i]==="1")w++});
+  return [w,t];
+};
+const iSeen=it=>it._sh?!!(it.pm&&it.pm[user.uid]):!!it.seen;
+function tally(it){
+  if(it.type==="movie")return [iSeen(it)?1:0,1];
+  if(it._sh)return progOf(it,user.uid);
+  let t=0,w=0;(it.seasons||[]).forEach(s=>{t+=s.eps;s.seen.forEach(v=>{if(v)w++})});return [w,t];
+}
+function saveProg(it,se,arr){
+  if(!it._sh){se.seen=arr;return put(it)}
+  const str=arr.map(v=>v?"1":"0").join("");
+  it.p=it.p||{};it.p[user.uid]=it.p[user.uid]||{};it.p[user.uid][se.n]=str;
+  return updateDoc(doc(db,"lists",it._l),{["items."+it.key+".p."+user.uid+"."+se.n]:str}).catch(()=>say("Não foi possível salvar."));
+}
+function saveMovie(it,v){
+  if(!it._sh){it.seen=v;return put(it)}
+  it.pm=it.pm||{};it.pm[user.uid]=v;
+  return updateDoc(doc(db,"lists",it._l),{["items."+it.key+".pm."+user.uid]:v}).catch(()=>say("Não foi possível salvar."));
+}
 
 function render(){
   const P=lists.find(l=>l.personal),L=curList();if(!L||!P)return;
   drawChips();
-  const mineItems=Object.values(P.items||{}).sort((a,b)=>(b.added||0)-(a.added||0));
+  const mineItems=Object.values(P.items||{}).sort((a,b)=>(b.added||0)-(a.added||0)).map(i=>({...i,_l:P.id}));
   const sharedItems=lists.filter(l=>!l.personal).flatMap(l=>Object.values(l.items||{}).map(i=>({...i,_l:l.id})));
   /* início: o que estou assistindo (lista pessoal) */
   const watching=mineItems.filter(i=>i.status!=="wish"&&(i.type==="tv"?tally(i)[0]<tally(i)[1]||!tally(i)[1]:!i.seen));
@@ -593,7 +675,7 @@ function render(){
     }else{
       $("itxt").textContent=CL.personal?"Só você vê esta lista.":"Compartilhada com "+join(Object.values(CL.names||{}))+".";
       $("inv").hidden=!!CL.personal;$("ren").hidden=!!CL.personal;
-      const its=Object.values(CL.items||{}).sort((a,b)=>(b.added||0)-(a.added||0)).filter(i=>filt==="all"||catK(i)===filt);
+      const its=Object.values(CL.items||{}).sort((a,b)=>(b.added||0)-(a.added||0)).filter(i=>filt==="all"||catK(i)===filt).map(i=>({...i,_l:CL.id,_sh:!CL.personal,_names:CL.names||{}}));
       drawLib(its.filter(i=>i.status!=="wish"));
     }
   }
@@ -615,24 +697,34 @@ function detailOf(it,showHead){
   if(showHead)body.appendChild(el("h2",null,it.title+(it.year?" ("+it.year+")":"")));
   body.appendChild(el("p","ov",catL(it)));if(it.overview)body.appendChild(el("p","ov",it.overview));
   const pv=el("p","prov");body.appendChild(pv);provText(it,pv);
+  if(it._sh){
+    const bx=el("div","ov");
+    Object.keys(it._names||{}).forEach(u=>{
+      const c=it.type==="movie"?null:progOf(it,u);
+      const t=it.type==="movie"?((it.pm&&it.pm[u])?"assistiu":"ainda não assistiu"):c[0]+" de "+c[1]+" episódios";
+      bx.appendChild(el("div",null,it._names[u]+": "+t));
+    });
+    body.appendChild(bx);
+  }
+  const tb=el("div","eps");tb.appendChild(trailerBtn(it));body.appendChild(tb);
   if(it.type==="movie"){
-    const mb=el("button","ghost mv",it.seen?"Assistido ✓":"Marcar como assistido");
-    mb.setAttribute("aria-pressed",String(!!it.seen));mb.dataset.k=it.key+"-mv";
-    mb.onclick=()=>{it.seen=!it.seen;focusKey=mb.dataset.k;put(it)};body.appendChild(mb);
+    const sn=iSeen(it),mb=el("button","ghost mv",sn?"Assistido ✓":"Marcar como assistido");
+    mb.setAttribute("aria-pressed",String(sn));mb.dataset.k=it.key+"-mv";
+    mb.onclick=()=>{focusKey=mb.dataset.k;saveMovie(it,!iSeen(it))};body.appendChild(mb);
   }
   (it.seasons||[]).forEach((se,si)=>{
     const sd=el("details","season"),key=it.key+"-"+si;track(sd,key);
-    const w=se.seen.filter(Boolean).length,ss=el("summary");
+    const arr=myProg(it,se),w=arr.filter(Boolean).length,ss=el("summary");
     ss.appendChild(el("span",null,"Temporada "+se.n));ss.appendChild(el("span","count",w+"/"+se.eps));sd.appendChild(ss);
     const acts=el("div","eps"),all=el("button","ghost",w===se.eps?"Desmarcar tudo":"Marcar tudo como visto");
     all.dataset.k=key+"-all";
-    all.onclick=()=>{const v=w!==se.eps;se.seen=se.seen.map(()=>v);focusKey=all.dataset.k;put(it)};
+    all.onclick=()=>{const v=w!==se.eps;focusKey=all.dataset.k;saveProg(it,se,arr.map(()=>v))};
     acts.appendChild(all);sd.appendChild(acts);
     const eps=el("div","eps");
-    se.seen.forEach((v,i)=>{
+    arr.forEach((v,i)=>{
       const b=el("button","ep",String(i+1));b.setAttribute("aria-pressed",String(!!v));
       b.setAttribute("aria-label","Episódio "+(i+1)+(v?", visto":", não visto"));b.dataset.k=key+"-"+i;
-      b.onclick=()=>{se.seen[i]=!se.seen[i];focusKey=b.dataset.k;put(it)};eps.appendChild(b);
+      b.onclick=()=>{const na=arr.slice();na[i]=!na[i];focusKey=b.dataset.k;saveProg(it,se,na)};eps.appendChild(b);
     });
     sd.appendChild(eps);body.appendChild(sd);
   });
@@ -649,7 +741,7 @@ function drawLib(items){
     if(it.poster){const im=el("img","poster");im.src=IMG+it.poster;im.alt="";im.loading="lazy";row.appendChild(im)}
     const tx=el("div","grow"),top=el("div","top"),c=tally(it);
     top.appendChild(el("b",null,it.title+(it.year?" ("+it.year+")":"")));
-    top.appendChild(el("span","count",it.type==="movie"?(it.seen?"Assistido":"Filme"):c[0]+"/"+c[1]));
+    top.appendChild(el("span","count",it.type==="movie"?(iSeen(it)?"Assistido":"Filme"):c[0]+"/"+c[1]));
     const bar=el("div","bar"),f=el("i");f.style.width=(c[1]?c[0]/c[1]*100:0)+"%";bar.appendChild(f);
     tx.appendChild(top);tx.appendChild(bar);row.appendChild(tx);sm.appendChild(row);d.appendChild(sm);
     d.appendChild(detailOf(it,false));$("lib").appendChild(d);
@@ -657,7 +749,7 @@ function drawLib(items){
 }
 
 function drawWish(items){
-  const ul=$("wish");ul.innerHTML="";
+  lastWish=items;const ul=$("wish");ul.innerHTML="";
   if(!items.length){ul.appendChild(el("li","empty","Nada por aqui. Ao buscar, toque em Quero ver para guardar um título."));return}
   items.forEach(it=>{
     const li=el("li"),g=el("div","grow");
