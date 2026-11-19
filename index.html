@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="theme-color" content="#0E1A17">
+<meta name="theme-color" content="#1B1C1F">
 <link rel="manifest" href="manifest.json">
 <link rel="icon" href="icon-192.png">
 <link rel="apple-touch-icon" href="icon-192.png">
@@ -12,9 +12,9 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Schibsted+Grotesk:wght@400;600;800&display=swap" rel="stylesheet">
 <style>
-:root{--bg:#E9F0EC;--surface:#F7FAF8;--ink:#14231F;--muted:#526660;--accent:#0E7C66;--on:#F7FAF8;--line:rgba(20,35,31,.18);--font:"Schibsted Grotesk","Helvetica Neue",Arial,sans-serif;color-scheme:light}
-@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0E1A17;--surface:#16262A;--ink:#E6F1EC;--muted:#9DB2AB;--accent:#4FD1A5;--on:#0E1A17;--line:rgba(230,241,236,.2);color-scheme:dark}}
-:root[data-theme="dark"]{--bg:#0E1A17;--surface:#16262A;--ink:#E6F1EC;--muted:#9DB2AB;--accent:#4FD1A5;--on:#0E1A17;--line:rgba(230,241,236,.2);color-scheme:dark}
+:root{--bg:#ECECEE;--surface:#FFFFFF;--ink:#1B1C1F;--muted:#5E6068;--accent:#1B1C1F;--on:#FFFFFF;--line:rgba(27,28,31,.18);--font:"Schibsted Grotesk","Helvetica Neue",Arial,sans-serif;color-scheme:light}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#1B1C1F;--surface:#26272B;--ink:#F2F2F3;--muted:#A3A5AC;--accent:#FFFFFF;--on:#1B1C1F;--line:rgba(242,242,243,.2);color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#1B1C1F;--surface:#26272B;--ink:#F2F2F3;--muted:#A3A5AC;--accent:#FFFFFF;--on:#1B1C1F;--line:rgba(242,242,243,.2);color-scheme:dark}
 *,*::before,*::after{box-sizing:border-box}
 html{scroll-padding-top:env(safe-area-inset-top,0px)}
 body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--font);font-size:1.05rem;line-height:1.5;padding:env(safe-area-inset-top,0px) 0 env(safe-area-inset-bottom,0px)}
@@ -82,9 +82,32 @@ input:focus{outline:0;border-bottom-color:var(--accent)}
 .cal li.empty{border-top:0}
 .cal .d{color:var(--muted);white-space:nowrap;text-align:right}
 .foot{margin-top:3rem;color:var(--muted);font-size:.8rem}
+.top2{display:flex;align-items:center;gap:.8rem;margin-bottom:1rem}
+.top2 h1{margin:0;font-size:clamp(1.6rem,7vw,2.4rem)}
+#burger{width:2.8rem;height:2.8rem;padding:0;display:grid;place-items:center;border-radius:.7rem;border:1.5px solid var(--line);background:none;color:var(--ink)}
+#scrim{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:30}
+#drawer{position:fixed;top:0;bottom:0;left:0;width:min(18rem,82vw);background:var(--surface);z-index:40;padding:calc(1rem + env(safe-area-inset-top,0px)) 1rem 1rem;display:flex;flex-direction:column;gap:.2rem;transform:translateX(-100%);transition:transform .25s;overflow-y:auto}
+#drawer.on{transform:none}
+#drawer button.nav{text-align:left;padding:.8rem .9rem;border:0;border-radius:.7rem;background:none;color:var(--ink);font-weight:600;font-size:1.05rem}
+#drawer button.nav[aria-current="page"]{background:var(--accent);color:var(--on)}
+#drawer h3{margin:1rem .9rem .3rem;font-size:.85rem;color:var(--muted);font-weight:600}
+#drawer .who{margin:.2rem .9rem 1rem;font-weight:800;font-size:1.1rem}
+.shelf{display:flex;gap:.8rem;overflow-x:auto;scroll-snap-type:x proximity;padding:.2rem 0 .8rem;margin:0 -1rem;padding-left:1rem;padding-right:1rem;-webkit-overflow-scrolling:touch}
+.card{flex:0 0 7.2rem;scroll-snap-align:start;background:none;border:0;padding:0;color:var(--ink);text-align:left}
+.card img,.card .ph{width:7.2rem;height:10.8rem;object-fit:cover;border-radius:.6rem;background:var(--line);display:block}
+.card b{display:block;font-size:.9rem;margin-top:.4rem;line-height:1.2;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.card .bar{margin-top:.3rem}
+.detail{background:var(--surface);border:1px solid var(--line);border-radius:1rem;margin:.4rem 0 1rem;overflow:hidden}
+.screen h2{margin:1.2rem 0 .8rem}
+#splash{position:fixed;inset:0;z-index:50;background:#1B1C1F;display:grid;place-items:center;transition:opacity .5s}
+#splash.off{opacity:0;pointer-events:none}
+#splash svg{width:7rem;height:7rem;animation:pop 1.1s cubic-bezier(.2,.8,.2,1) both}
+@keyframes pop{from{transform:scale(.6);opacity:0}to{transform:scale(1);opacity:1}}
+@media (prefers-reduced-motion:reduce){#splash svg{animation:none}}
 </style>
 </head>
 <body>
+<div id="splash" aria-hidden="true"><svg viewBox="0 0 512 512"><g fill="#C9CBD1"><rect x="150" y="90" width="62" height="332"/><rect x="150" y="90" width="212" height="58"/><rect x="150" y="226" width="188" height="58"/><rect x="150" y="364" width="212" height="58"/></g></svg></div>
 <main class="wrap">
   <section id="login" hidden>
     <h1>Entertain Cine</h1>
@@ -94,20 +117,44 @@ input:focus{outline:0;border-bottom-color:var(--accent)}
   </section>
 
   <section id="app" hidden>
-    <div class="head"><h1>Entertain Cine</h1><div class="acts2"><button class="ghost" id="bell"></button><button class="ghost" id="theme"></button><button class="ghost" id="out">Sair</button></div></div>
-    <p id="who"></p>
-    <div class="tabs" id="tabs" role="group" aria-label="Escolha a lista"></div>
-    <div class="tabs" id="chips" role="group" aria-label="Filtrar por tipo"></div>
-    <p id="info"><span id="itxt"></span><button class="ghost" id="inv" hidden>Convidar</button></p>
-    <form id="f">
-      <input id="q" type="search" placeholder="Buscar série ou filme" aria-label="Buscar série ou filme" autocomplete="off" required>
-      <button class="btn" id="go" aria-label="Buscar"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="M16 16l4.5 4.5"/></svg></button>
-    </form>
-    <p id="msg" role="status"></p>
-    <ul class="results" id="results"></ul>
-    <details class="box" id="cbox" open><summary><h2>Calendário <span class="count" id="ccount"></span></h2></summary><ul class="cal" id="cal"></ul></details>
-    <details class="box" id="lbox" open><summary><h2>Na lista <span class="count" id="lcount"></span></h2></summary><div id="lib"></div></details>
-    <details class="box" id="wbox" open><summary><h2>Lista de desejo <span class="count" id="wcount"></span></h2></summary><ul class="results" id="wish"></ul></details>
+    <div class="top2"><button id="burger" aria-label="Abrir menu"><svg width="22" height="22" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button><h1 id="ttl">Início</h1></div>
+    <div id="scrim" hidden></div>
+    <nav id="drawer" aria-label="Menu">
+      <p class="who" id="who"></p>
+      <button class="nav" data-v="home">Início</button>
+      <button class="nav" data-v="mine">Minha lista</button>
+      <button class="nav" data-v="shared">Compartilhadas</button>
+      <button class="nav" data-v="wish">Desejos</button>
+      <button class="nav" data-v="cal">Calendário</button>
+      <h3>Conta</h3>
+      <button class="nav" id="bell"></button>
+      <button class="nav" id="theme"></button>
+      <button class="nav" id="out">Sair</button>
+    </nav>
+    <div id="v-home" class="screen">
+      <form id="f">
+        <input id="q" type="search" placeholder="Buscar série ou filme" aria-label="Buscar série ou filme" autocomplete="off" required>
+        <button class="btn" id="go" aria-label="Buscar"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="M16 16l4.5 4.5"/></svg></button>
+      </form>
+      <p id="msg" role="status"></p>
+      <ul class="results" id="results"></ul>
+      <h2>Assistindo <span class="count" id="hcount"></span></h2>
+      <div class="shelf" id="shelf"></div>
+      <div id="hdetail"></div>
+    </div>
+    <div id="v-list" class="screen" hidden>
+      <div class="tabs" id="tabs" role="group" aria-label="Escolha a lista"></div>
+      <p id="info"><span id="itxt"></span><button class="ghost" id="ren" hidden>Renomear</button><button class="ghost" id="inv" hidden>Convidar</button></p>
+      <div class="tabs" id="chips" role="group" aria-label="Filtrar por tipo"></div>
+      <div id="lib"></div>
+    </div>
+    <div id="v-wish" class="screen" hidden>
+      <div class="tabs" id="chips2" role="group" aria-label="Filtrar por tipo"></div>
+      <ul class="results" id="wish"></ul>
+    </div>
+    <div id="v-cal" class="screen" hidden>
+      <ul class="cal" id="cal"></ul>
+    </div>
     <p class="foot">Dados de filmes e séries: TMDB. Onde assistir: JustWatch, via TMDB. Este produto usa a API do TMDB, mas não é endossado nem certificado por ele.</p>
   </section>
 </main>
@@ -123,7 +170,7 @@ const $=id=>document.getElementById(id);
 const el=(t,c,x)=>{const e=document.createElement(t);if(c)e.className=c;if(x!=null)e.textContent=x;return e};
 const say=t=>{$("msg").textContent=t||""};
 const join=a=>a.length<2?a.join(""):a.slice(0,-1).join(", ")+" e "+a[a.length-1];
-let user=null,lists=[],cur=null,unsub=null,focusKey=null,filt="all";const open=new Set();
+let joined=false,user=null,lists=[],cur=null,unsub=null,focusKey=null,filt="all",view="home",hsel=null;const open=new Set();
 
 async function tmdb(path,params){
   const u=new URL("https://api.themoviedb.org/3"+path);
@@ -174,7 +221,7 @@ onAuthStateChanged(auth,async u=>{
   user=u;$("login").hidden=!!u;$("app").hidden=!u;
   if(unsub){unsub();unsub=null}
   if(!u){lists=[];cur=null;return}
-  $("who").textContent="Olá, "+(u.displayName||"você");
+  $("who").textContent=u.displayName||"Conta";
   const me=u.displayName||"Alguém", pid="p_"+u.uid;
   try{
     const pref=doc(db,"lists",pid);
@@ -182,7 +229,7 @@ onAuthStateChanged(auth,async u=>{
     const m=location.hash.match(/^#entrar=([\w-]+)/);
     if(m){
       const r=doc(db,"lists",m[1]);
-      if((await getDoc(r)).exists()){await updateDoc(r,{members:arrayUnion(u.uid),["names."+u.uid]:me});cur=m[1]}
+      if((await getDoc(r)).exists()){await updateDoc(r,{members:arrayUnion(u.uid),["names."+u.uid]:me});cur=m[1];joined=true}
       history.replaceState(null,"",location.pathname);
     }
   }catch(e){say("Erro ao preparar sua conta. Confira as regras do Firestore.")}
@@ -190,15 +237,16 @@ onAuthStateChanged(auth,async u=>{
   unsub=onSnapshot(query(collection(db,"lists"),where("members","array-contains",u.uid)),snap=>{
     lists=snap.docs.map(d=>({id:d.id,...d.data()}));
     if(!lists.some(l=>l.id===cur))cur=pid;
-    render();
+    if(joined){joined=false;go("shared")}else render();
   },()=>say("Não foi possível sincronizar agora."));
 });
 
 /* dados */
 const curList=()=>lists.find(l=>l.id===cur);
 const lref=()=>doc(db,"lists",cur);
-const put=it=>updateDoc(lref(),{["items."+it.key]:it}).catch(()=>say("Não foi possível salvar."));
-const del=k=>updateDoc(lref(),{["items."+k]:deleteField()}).catch(()=>say("Não foi possível remover."));
+const clean=it=>{const c={...it};delete c._l;return c};
+const put=it=>updateDoc(doc(db,"lists",it._l||cur),{["items."+it.key]:clean(it)}).catch(()=>say("Não foi possível salvar."));
+const del=(k,lid)=>updateDoc(doc(db,"lists",lid||cur),{["items."+k]:deleteField()}).catch(()=>say("Não foi possível remover."));
 
 async function newShared(){
   const n=(prompt("Nome da lista compartilhada","Nós dois")||"").trim();if(!n)return;
@@ -277,12 +325,12 @@ async function upcoming(it){
 }
 async function renderCal(items){
   const tok=++calTok,box=$("cal"),tvs=items.filter(i=>i.type==="tv");
-  if(!tvs.length){box.innerHTML="";$("ccount").textContent="";box.appendChild(el("li","empty","Adicione séries para ver quando saem episódios novos."));return}
+  if(!tvs.length){box.innerHTML="";box.appendChild(el("li","empty","Adicione séries para ver quando saem episódios novos."));return}
   let all=[];
   try{all=(await Promise.all(tvs.map(i=>upcoming(i).catch(()=>[])))).flat()}catch(e){}
   if(tok!==calTok)return;
   all.sort((a,b)=>a.date.localeCompare(b.date)||a.show.localeCompare(b.show));
-  box.innerHTML="";$("ccount").textContent=all.length?"("+all.length+")":"";
+  box.innerHTML="";
   if(!all.length){box.appendChild(el("li","empty","Nenhum episódio novo agendado para as suas séries."));return}
   const t=today();
   all.slice(0,30).forEach(e=>{
@@ -294,9 +342,41 @@ async function renderCal(items){
   notifyToday(all.filter(e=>e.date===t));
 }
 function drawChips(){
-  const c=$("chips");c.innerHTML="";
-  [["all","Tudo"],["serie","Séries"],["filme","Filmes"],["anime","Animes"],["doc","Documentários"]].forEach(([k,n])=>{
-    const b=el("button",null,n);b.setAttribute("aria-pressed",String(filt===k));b.onclick=()=>{filt=k;render()};c.appendChild(b);
+  for(const id of ["chips","chips2"]){
+    const c=$(id);c.innerHTML="";
+    [["all","Tudo"],["serie","Séries"],["filme","Filmes"],["anime","Animes"],["doc","Documentários"]].forEach(([k,n])=>{
+      const b=el("button",null,n);b.setAttribute("aria-pressed",String(filt===k));b.onclick=()=>{filt=k;render()};c.appendChild(b);
+    });
+  }
+}
+const TT={home:"Início",mine:"Minha lista",shared:"Compartilhadas",wish:"Desejos",cal:"Calendário"};
+function go(v){
+  view=v;
+  if(v==="mine"){const P=lists.find(l=>l.personal);if(P)cur=P.id}
+  if(v==="shared"){const S=lists.filter(l=>!l.personal);if(!S.some(l=>l.id===cur))cur=S.length?S[0].id:cur}
+  $("v-home").hidden=v!=="home";$("v-list").hidden=!(v==="mine"||v==="shared");$("v-wish").hidden=v!=="wish";$("v-cal").hidden=v!=="cal";
+  $("ttl").textContent=v==="shared"&&curList()&&!curList().personal?curList().name:TT[v];
+  document.querySelectorAll("#drawer .nav[data-v]").forEach(b=>b.setAttribute("aria-current",b.dataset.v===v?"page":"false"));
+  $("drawer").classList.remove("on");$("scrim").hidden=true;window.scrollTo(0,0);render();
+}
+$("burger").onclick=()=>{$("drawer").classList.add("on");$("scrim").hidden=false};
+$("scrim").onclick=()=>{$("drawer").classList.remove("on");$("scrim").hidden=true};
+document.querySelectorAll("#drawer .nav[data-v]").forEach(b=>b.onclick=()=>go(b.dataset.v));
+$("ren").onclick=async()=>{
+  const L=curList();if(!L||L.personal)return;
+  const n=(prompt("Novo nome da lista",L.name)||"").trim();if(!n||n===L.name)return;
+  try{await updateDoc(lref(),{name:n})}catch(e){say("Não foi possível renomear.")}
+};
+function drawShelf(items){
+  const sh=$("shelf");sh.innerHTML="";$("hcount").textContent=items.length?"("+items.length+")":"";
+  if(!items.length){sh.appendChild(el("p","empty","Nada em andamento. Busque um título e toque em Adicionar."));$("hdetail").innerHTML="";return}
+  items.forEach(it=>{
+    const b=el("button","card");
+    if(it.poster){const im=el("img");im.src=IMG+it.poster;im.alt="";im.loading="lazy";b.appendChild(im)}else b.appendChild(el("div","ph"));
+    b.appendChild(el("b",null,it.title));
+    const c=tally(it),bar=el("div","bar"),f=el("i");f.style.width=(c[1]?c[0]/c[1]*100:0)+"%";bar.appendChild(f);b.appendChild(bar);
+    b.setAttribute("aria-label",it.title+", abrir detalhes");
+    b.onclick=()=>{hsel=hsel===it.key?null:it.key;render()};sh.appendChild(b);
   });
 }
 
@@ -305,27 +385,82 @@ function track(d,k){d.open=open.has(k);d.addEventListener("toggle",()=>{d.open?o
 function tally(it){if(it.type==="movie")return [it.seen?1:0,1];let t=0,w=0;(it.seasons||[]).forEach(s=>{t+=s.eps;s.seen.forEach(v=>{if(v)w++})});return [w,t]}
 
 function render(){
-  const L=curList();if(!L)return;
-  const t=$("tabs");t.innerHTML="";
-  [...lists].sort((a,b)=>(b.personal?1:0)-(a.personal?1:0)||(a.created||0)-(b.created||0)).forEach(l=>{
-    const b=el("button",null,l.personal?"Minha lista":l.name);
-    b.setAttribute("aria-pressed",String(l.id===cur));
-    b.onclick=()=>{cur=l.id;open.clear();$("results").innerHTML="";say("");render()};
-    t.appendChild(b);
-  });
-  const nb=el("button","plus","+ Compartilhada");nb.onclick=newShared;t.appendChild(nb);
-  $("itxt").textContent=L.personal?"Só você vê esta lista.":"Compartilhada com "+join(Object.values(L.names||{}))+".";
-  $("inv").hidden=!!L.personal;
-  const items=Object.values(L.items||{}).sort((a,b)=>(b.added||0)-(a.added||0));
-  drawChips();const vis=items.filter(i=>filt==="all"||catK(i)===filt);
-  drawLib(vis.filter(i=>i.status!=="wish"));drawWish(vis.filter(i=>i.status==="wish"));renderCal(items);
+  const P=lists.find(l=>l.personal),L=curList();if(!L||!P)return;
+  drawChips();
+  const mineItems=Object.values(P.items||{}).sort((a,b)=>(b.added||0)-(a.added||0));
+  const sharedItems=lists.filter(l=>!l.personal).flatMap(l=>Object.values(l.items||{}).map(i=>({...i,_l:l.id})));
+  /* início: o que estou assistindo (lista pessoal) */
+  const watching=mineItems.filter(i=>i.status!=="wish"&&(i.type==="tv"?tally(i)[0]<tally(i)[1]||!tally(i)[1]:!i.seen));
+  drawShelf(watching);
+  const hd=$("hdetail");hd.innerHTML="";
+  const sel=hsel&&mineItems.find(i=>i.key===hsel);
+  if(sel){const holder=el("div","detail");holder.appendChild(detailOf(sel,true));hd.appendChild(holder)}
+  /* listas */
+  if(view==="mine"||view==="shared"){
+    const t=$("tabs");t.innerHTML="";
+    const group=lists.filter(l=>view==="mine"?l.personal:!l.personal).sort((a,b)=>(a.created||0)-(b.created||0));
+    group.forEach(l=>{
+      const b=el("button",null,l.personal?"Minha lista":l.name);b.setAttribute("aria-pressed",String(l.id===cur));
+      b.onclick=()=>{cur=l.id;open.clear();go(view)};t.appendChild(b);
+    });
+    if(view==="shared"){const nb=el("button","plus","+ Nova compartilhada");nb.onclick=newShared;t.appendChild(nb)}
+    const CL=curList();
+    $("ttl").textContent=view==="shared"&&!CL.personal?CL.name:TT[view];
+    if(view==="shared"&&CL.personal){
+      $("itxt").textContent="Você ainda não tem listas compartilhadas. Toque em + Nova compartilhada.";$("inv").hidden=true;$("ren").hidden=true;$("lib").innerHTML="";
+    }else{
+      $("itxt").textContent=CL.personal?"Só você vê esta lista.":"Compartilhada com "+join(Object.values(CL.names||{}))+".";
+      $("inv").hidden=!!CL.personal;$("ren").hidden=!!CL.personal;
+      const its=Object.values(CL.items||{}).sort((a,b)=>(b.added||0)-(a.added||0)).filter(i=>filt==="all"||catK(i)===filt);
+      drawLib(its.filter(i=>i.status!=="wish"));
+    }
+  }
+  /* desejos: de todas as suas listas */
+  if(view==="wish"){
+    const all=[...mineItems.map(i=>({...i,_l:P.id})),...sharedItems].filter(i=>i.status==="wish"&&(filt==="all"||catK(i)===filt));
+    drawWish(all);
+  }
+  /* calendário: séries de todas as suas listas */
+  if(view==="cal"){
+    const seen=new Set();const tvs=[...mineItems,...sharedItems].filter(i=>i.type==="tv"&&i.status!=="wish"&&!seen.has(i.key)&&seen.add(i.key));
+    renderCal(tvs);
+  }
   if(focusKey){const f=document.querySelector('[data-k="'+focusKey+'"]');if(f)f.focus();focusKey=null}
 }
 
+function detailOf(it,showHead){
+  const body=el("div","body");
+  if(showHead)body.appendChild(el("h2",null,it.title+(it.year?" ("+it.year+")":"")));
+  body.appendChild(el("p","ov",catL(it)));if(it.overview)body.appendChild(el("p","ov",it.overview));
+  const pv=el("p","prov");body.appendChild(pv);provText(it,pv);
+  if(it.type==="movie"){
+    const mb=el("button","ghost mv",it.seen?"Assistido ✓":"Marcar como assistido");
+    mb.setAttribute("aria-pressed",String(!!it.seen));mb.dataset.k=it.key+"-mv";
+    mb.onclick=()=>{it.seen=!it.seen;focusKey=mb.dataset.k;put(it)};body.appendChild(mb);
+  }
+  (it.seasons||[]).forEach((se,si)=>{
+    const sd=el("details","season"),key=it.key+"-"+si;track(sd,key);
+    const w=se.seen.filter(Boolean).length,ss=el("summary");
+    ss.appendChild(el("span",null,"Temporada "+se.n));ss.appendChild(el("span","count",w+"/"+se.eps));sd.appendChild(ss);
+    const acts=el("div","eps"),all=el("button","ghost",w===se.eps?"Desmarcar tudo":"Marcar tudo como visto");
+    all.dataset.k=key+"-all";
+    all.onclick=()=>{const v=w!==se.eps;se.seen=se.seen.map(()=>v);focusKey=all.dataset.k;put(it)};
+    acts.appendChild(all);sd.appendChild(acts);
+    const eps=el("div","eps");
+    se.seen.forEach((v,i)=>{
+      const b=el("button","ep",String(i+1));b.setAttribute("aria-pressed",String(!!v));
+      b.setAttribute("aria-label","Episódio "+(i+1)+(v?", visto":", não visto"));b.dataset.k=key+"-"+i;
+      b.onclick=()=>{se.seen[i]=!se.seen[i];focusKey=b.dataset.k;put(it)};eps.appendChild(b);
+    });
+    sd.appendChild(eps);body.appendChild(sd);
+  });
+  const rm=el("button","ghost","Remover da lista");let armed=false;
+  rm.onclick=()=>{if(!armed){armed=true;rm.textContent="Toque de novo para remover";return}del(it.key,it._l)};
+  body.appendChild(rm);return body;
+}
 function drawLib(items){
-  $("lcount").textContent=items.length?"("+items.length+")":"";
   const lib=$("lib");lib.innerHTML="";
-  if(!items.length){lib.appendChild(el("p","empty","Nada aqui ainda. Busque uma série ou filme e toque em Adicionar."));return}
+  if(!items.length){lib.appendChild(el("p","empty","Nada aqui ainda. Busque uma série ou filme na tela Início e toque em Adicionar."));return}
   items.forEach(it=>{
     const d=el("details","show");track(d,it.key);
     const sm=el("summary"),row=el("div","row");
@@ -335,37 +470,11 @@ function drawLib(items){
     top.appendChild(el("span","count",it.type==="movie"?(it.seen?"Assistido":"Filme"):c[0]+"/"+c[1]));
     const bar=el("div","bar"),f=el("i");f.style.width=(c[1]?c[0]/c[1]*100:0)+"%";bar.appendChild(f);
     tx.appendChild(top);tx.appendChild(bar);row.appendChild(tx);sm.appendChild(row);d.appendChild(sm);
-    const body=el("div","body");body.appendChild(el("p","ov",catL(it)));if(it.overview)body.appendChild(el("p","ov",it.overview));
-    const pv=el("p","prov");body.appendChild(pv);let loaded=false;const fill=()=>{if(loaded)return;loaded=true;provText(it,pv)};if(d.open)fill();d.addEventListener("toggle",()=>{if(d.open)fill()});
-    if(it.type==="movie"){
-      const mb=el("button","ghost mv",it.seen?"Assistido ✓":"Marcar como assistido");
-      mb.setAttribute("aria-pressed",String(!!it.seen));mb.dataset.k=it.key+"-mv";
-      mb.onclick=()=>{it.seen=!it.seen;focusKey=mb.dataset.k;put(it)};body.appendChild(mb);
-    }
-    (it.seasons||[]).forEach((se,si)=>{
-      const sd=el("details","season"),key=it.key+"-"+si;track(sd,key);
-      const w=se.seen.filter(Boolean).length,ss=el("summary");
-      ss.appendChild(el("span",null,"Temporada "+se.n));ss.appendChild(el("span","count",w+"/"+se.eps));sd.appendChild(ss);
-      const acts=el("div","eps"),all=el("button","ghost",w===se.eps?"Desmarcar tudo":"Marcar tudo como visto");
-      all.dataset.k=key+"-all";
-      all.onclick=()=>{const v=w!==se.eps;se.seen=se.seen.map(()=>v);focusKey=all.dataset.k;put(it)};
-      acts.appendChild(all);sd.appendChild(acts);
-      const eps=el("div","eps");
-      se.seen.forEach((v,i)=>{
-        const b=el("button","ep",String(i+1));b.setAttribute("aria-pressed",String(!!v));
-        b.setAttribute("aria-label","Episódio "+(i+1)+(v?", visto":", não visto"));b.dataset.k=key+"-"+i;
-        b.onclick=()=>{se.seen[i]=!se.seen[i];focusKey=b.dataset.k;put(it)};eps.appendChild(b);
-      });
-      sd.appendChild(eps);body.appendChild(sd);
-    });
-    const rm=el("button","ghost","Remover da lista");let armed=false;
-    rm.onclick=()=>{if(!armed){armed=true;rm.textContent="Toque de novo para remover";return}del(it.key)};
-    body.appendChild(rm);d.appendChild(body);lib.appendChild(d);
+    d.appendChild(detailOf(it,false));$("lib").appendChild(d);
   });
 }
 
 function drawWish(items){
-  $("wcount").textContent=items.length?"("+items.length+")":"";
   const ul=$("wish");ul.innerHTML="";
   if(!items.length){ul.appendChild(el("li","empty","Nada por aqui. Ao buscar, toque em Quero ver para guardar um título."));return}
   items.forEach(it=>{
@@ -374,16 +483,13 @@ function drawWish(items){
     g.appendChild(el("p",null,catL(it)+". "+(it.overview||"")));const pv=el("p","prov");g.appendChild(pv);provText(it,pv);
     if(it.poster){const im=el("img","poster");im.src=IMG+it.poster;im.alt="";im.loading="lazy";li.appendChild(im)}
     const st=el("div","stack"),go=el("button","btn",it.type==="movie"?"Adicionar à lista":"Começar a assistir"),rm=el("button","ghost","Remover");
-    go.onclick=()=>startWatch(it,go);rm.onclick=()=>del(it.key);
+    go.onclick=()=>startWatch(it,go);rm.onclick=()=>del(it.key,it._l);
     st.appendChild(go);st.appendChild(rm);li.appendChild(g);li.appendChild(st);ul.appendChild(li);
   });
 }
 
-for(const [id,k] of [["cbox","cal-open"],["lbox","list-open"],["wbox","wish-open"]]){
-  const b=$(id);try{if(localStorage.getItem(k)==="0")b.open=false}catch(e){}
-  b.addEventListener("toggle",()=>{try{localStorage.setItem(k,b.open?"1":"0")}catch(e){}});
-}
 drawBell();
+setTimeout(()=>$("splash").classList.add("off"),1400);
 if("serviceWorker"in navigator)navigator.serviceWorker.register("sw.js").catch(()=>{});
 </script>
 </body>
