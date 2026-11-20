@@ -123,6 +123,19 @@ input:focus{outline:0;border-bottom-color:var(--accent)}
 .tabs.scroll button{flex:0 0 auto;white-space:nowrap}
 #lgo{width:3rem;height:3rem;padding:0;border-radius:50%;display:grid;place-items:center;flex-shrink:0}
 #lf{margin:0 0 .4rem}
+.ghost[aria-pressed="true"]{background:var(--accent);color:var(--on);border-color:var(--accent)}
+a.ghost{display:inline-block;text-decoration:none;color:var(--ink)}
+#raveline{margin:.6rem 0 0;font-size:.9rem;color:var(--muted)}
+#raveline a{color:var(--ink);font-weight:600}
+.rate{margin:.4rem 0 .8rem}
+.stars{display:flex;gap:.1rem;margin:.2rem 0}
+.star{background:none;border:0;font-size:1.8rem;line-height:1;color:var(--line);padding:0 .15rem}
+.star[aria-pressed="true"]{color:var(--accent)}
+.rate textarea{width:100%;font:inherit;padding:.6rem;border-radius:.6rem;border:1.5px solid var(--line);background:none;color:var(--ink);margin:.3rem 0 .4rem}
+.stats{display:grid;grid-template-columns:repeat(2,1fr);gap:.7rem}
+.stat{background:var(--surface);border:1px solid var(--line);border-radius:1rem;padding:1rem}
+.stat b{display:block;font-size:1.5rem;font-weight:800;letter-spacing:-.02em;overflow-wrap:anywhere}
+.stat span{color:var(--muted);font-size:.9rem}
 #splash{position:fixed;inset:0;z-index:50;background:#1B1C1F;display:grid;place-items:center;transition:opacity .5s}
 #splash.off{opacity:0;pointer-events:none}
 #splash svg{width:7rem;height:7rem;animation:pop 1.1s cubic-bezier(.2,.8,.2,1) both}
@@ -150,6 +163,7 @@ input:focus{outline:0;border-bottom-color:var(--accent)}
       <button class="nav" data-v="shared">Compartilhadas</button>
       <button class="nav" data-v="wish">Desejos</button>
       <button class="nav" data-v="cal">Calendário</button>
+      <button class="nav" data-v="stats">Resumo</button>
       <h3>Categorias</h3>
       <button class="nav" data-c="serie">Séries</button>
       <button class="nav" data-c="filme">Filmes</button>
@@ -163,7 +177,7 @@ input:focus{outline:0;border-bottom-color:var(--accent)}
     </nav>
     <div id="v-home" class="screen">
       <form id="f">
-        <input id="q" type="search" placeholder="Buscar série ou filme" aria-label="Buscar série ou filme" autocomplete="off" required>
+        <input id="q" type="search" placeholder="Buscar" aria-label="Buscar série ou filme" autocomplete="off" required>
         <button class="btn" id="go">Buscar</button>
       </form>
       <p id="msg" role="status"></p>
@@ -171,13 +185,16 @@ input:focus{outline:0;border-bottom-color:var(--accent)}
       <h2>Assistindo <span class="count" id="hcount"></span></h2>
       <div class="shelf" id="shelf"></div>
       <div id="hdetail"></div>
+      <div id="done"></div>
+      <div id="recs"></div>
       <div id="trends"></div>
     </div>
     <div id="v-list" class="screen" hidden>
       <div class="tabs scroll" id="tabs" role="group" aria-label="Escolha a lista"></div>
       <div class="panel">
         <p id="info"><span id="itxt"></span></p>
-        <div class="pact"><button class="ghost" id="ren" hidden>Renomear</button><button class="ghost" id="inv" hidden>Convidar</button></div>
+        <div class="pact"><button class="ghost" id="ren" hidden>Renomear</button><button class="ghost" id="inv" hidden>Convidar</button><button class="ghost" id="del" hidden></button></div>
+        <p id="raveline" hidden>Quer assistir junto? Use o Rave: <a href="https://play.google.com/store/search?q=Rave%20Watch%20Party&amp;c=apps" target="_blank" rel="noopener">Android</a> ou <a href="https://apps.apple.com/app/id929775122" target="_blank" rel="noopener">iPhone</a>. Cada pessoa precisa da própria conta no streaming.</p>
       </div>
       <form id="lf">
         <input id="lq" type="search" placeholder="Buscar e adicionar nesta lista" aria-label="Buscar e adicionar nesta lista" autocomplete="off" required>
@@ -190,9 +207,11 @@ input:focus{outline:0;border-bottom-color:var(--accent)}
     <div id="v-wish" class="screen" hidden>
       <button class="btn" id="roll" style="margin:0 0 1rem">O que assistir hoje?</button>
       <div class="tabs scroll" id="chips2" role="group" aria-label="Filtrar por tipo"></div>
+      <div class="eps"><button class="ghost" id="mine2" aria-pressed="false">Só nas minhas plataformas</button></div>
       <ul class="results" id="wish"></ul>
     </div>
     <div id="v-cat" class="screen" hidden><div id="catbox"></div></div>
+    <div id="v-stats" class="screen" hidden><div id="statsbox"></div></div>
     <div id="v-all" class="screen" hidden>
       <div class="tabs"><button id="allback">← Voltar</button></div>
       <div class="grid" id="grid"></div>
@@ -209,7 +228,7 @@ input:focus{outline:0;border-bottom-color:var(--accent)}
 <script type="module">
 import {initializeApp} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import {getAuth,GoogleAuthProvider,signInWithPopup,signInWithRedirect,onAuthStateChanged,signOut} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-import {getFirestore,collection,doc,query,where,onSnapshot,setDoc,updateDoc,getDoc,addDoc,arrayUnion,deleteField} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import {getFirestore,collection,doc,query,where,onSnapshot,setDoc,updateDoc,getDoc,addDoc,arrayUnion,deleteField,deleteDoc,arrayRemove} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 const TMDB="6f6cd93f5427aed1308e86f7de0efd76", IMG="https://image.tmdb.org/t/p/w154";
 const app=initializeApp({apiKey:"AIzaSyBdAyH_GQIeL_zjsXc277CeYXy0lUiaj2s",authDomain:"entertain-cine.firebaseapp.com",projectId:"entertain-cine",storageBucket:"entertain-cine.firebasestorage.app",messagingSenderId:"631268199517",appId:"1:631268199517:web:dc156b1c4f9bf4ce5411b4"});
@@ -313,6 +332,20 @@ async function invite(){
   }catch(e){if(e&&e.name!=="AbortError")prompt("Copie o link de convite:",link)}
 }
 $("inv").onclick=invite;
+$("del").onclick=async()=>{
+  const L=curList();if(!L||L.personal)return;
+  const own=(L.members||[])[0]===user.uid;
+  if(!confirm(own?"Apagar o grupo “"+L.name+"” para todos? Isso não pode ser desfeito.":"Sair do grupo “"+L.name+"”?"))return;
+  try{
+    if(own)await deleteDoc(doc(db,"lists",L.id));
+    else await updateDoc(doc(db,"lists",L.id),{members:arrayRemove(user.uid),["names."+user.uid]:deleteField()});
+    toast(own?"Grupo apagado.":"Você saiu do grupo.");
+  }catch(e){toast("Não foi possível concluir.")}
+};
+$("mine2").onclick=()=>{
+  if(!myProv.length&&!onlyMine){toast("Escolha suas plataformas em Conta.");return}
+  onlyMine=!onlyMine;$("mine2").setAttribute("aria-pressed",String(onlyMine));render();
+};
 
 /* busca */
 function toItem(x,type,cat){
@@ -396,7 +429,7 @@ function providers(it){
   }).catch(e=>{delete provCache[it.key];throw e}));
 }
 function provText(it,p){
-  providers(it).then(r=>{p.textContent=r.flat.length?"Onde assistir: "+r.flat.join(", "):(r.rent.length?"Para alugar ou comprar: "+[...new Set(r.rent)].slice(0,4).join(", "):"Sem plataforma no Brasil no momento.")}).catch(()=>{p.textContent=""});
+  providers(it).then(r=>{p.textContent=r.flat.length?"Onde assistir: "+r.flat.join(", "):(r.rent.length?"Para alugar ou comprar: "+[...new Set(r.rent)].slice(0,4).join(", "):"Sem plataforma no Brasil no momento.");if(onMine(r.flat))p.textContent+=" · na sua assinatura"}).catch(()=>{p.textContent=""});
 }
 const today=()=>{const d=new Date();return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0")};
 const calCache={};let calTok=0;
@@ -433,12 +466,12 @@ function drawChips(){
     });
   }
 }
-const TT={home:"Entertain Cine",mine:"Minha lista",shared:"Compartilhadas",wish:"Desejos",cal:"Calendário"};
+const TT={home:"Entertain Cine",stats:"Resumo",mine:"Minha lista",shared:"Compartilhadas",wish:"Desejos",cal:"Calendário"};
 function go(v){
   view=v;
   if(v==="mine"){const P=lists.find(l=>l.personal);if(P)cur=P.id}
   if(v==="shared"){const S=lists.filter(l=>!l.personal);if(!S.some(l=>l.id===cur))cur=S.length?S[0].id:cur}
-  $("v-home").hidden=v!=="home";$("v-list").hidden=!(v==="mine"||v==="shared");$("v-wish").hidden=v!=="wish";$("v-cal").hidden=v!=="cal";$("v-cat").hidden=v!=="cat";$("v-all").hidden=v!=="all";
+  $("v-home").hidden=v!=="home";$("v-list").hidden=!(v==="mine"||v==="shared");$("v-wish").hidden=v!=="wish";$("v-cal").hidden=v!=="cal";$("v-cat").hidden=v!=="cat";$("v-all").hidden=v!=="all";$("v-stats").hidden=v!=="stats";
   $("ttl").textContent=v==="cat"?CATS[catSel].n:v==="all"?allTitle():v==="shared"&&curList()&&!curList().personal?curList().name:TT[v];
   document.querySelectorAll("#drawer .nav").forEach(b=>b.setAttribute("aria-current",(b.dataset.v&&b.dataset.v===v)||(b.dataset.c&&v==="cat"&&b.dataset.c===catSel)?"page":"false"));
   $("drawer").classList.remove("on");$("scrim").hidden=true;window.scrollTo(0,0);render();if(v==="cat")drawCat();if(v==="all")drawAll();
@@ -535,6 +568,119 @@ function showRoll(){
   $("pickbox").hidden=false;
 }
 $("roll").onclick=showRoll;
+let myProv=[],onlyMine=false,wishTok=0,recKey="";
+const PLATS=[["netflix","Netflix"],["prime video","Prime Video"],["max","Max"],["disney","Disney+"],["apple tv","Apple TV+"],["globoplay","Globoplay"],["paramount","Paramount+"],["crunchyroll","Crunchyroll"],["telecine","Telecine"]];
+const onMine=names=>myProv.length&&(names||[]).some(n=>myProv.some(k=>String(n).toLowerCase().includes(k)));
+const votes=i=>Object.keys(i.v||{}).length;
+function saveVote(it,on){
+  return updateDoc(doc(db,"lists",it._l),{["items."+it.key+".v."+user.uid]:on?true:deleteField()}).catch(()=>say("Não foi possível votar."));
+}
+function drawWishSmart(all){
+  const lst=[...all].sort((a,b)=>votes(b)-votes(a)||(b.added||0)-(a.added||0)),tk=++wishTok;
+  if(onlyMine&&myProv.length){
+    Promise.all(lst.map(i=>providers(i).then(r=>!!onMine(r.flat)).catch(()=>false))).then(ok=>{if(tk===wishTok&&view==="wish")drawWish(lst.filter((_,k)=>ok[k]))});
+  }else drawWish(lst);
+}
+function saveRate(it,n,c){
+  const v={n:n||0,c:c||""};it.r=it.r||{};it.r[user.uid]=v;
+  return updateDoc(doc(db,"lists",it._l),{["items."+it.key+".r."+user.uid]:v}).catch(()=>say("Não foi possível salvar."));
+}
+function ratingBlock(it){
+  const box=el("div","rate"),me=(it.r&&it.r[user.uid])||{n:0,c:""},row=el("div","stars");
+  for(let i=1;i<=5;i++){
+    const b=el("button","star","★");b.setAttribute("aria-label",i+(i>1?" estrelas":" estrela"));b.setAttribute("aria-pressed",String(me.n>=i));b.dataset.k=it.key+"-st"+i;
+    b.onclick=()=>{focusKey=b.dataset.k;saveRate(it,me.n===i?0:i,me.c)};row.appendChild(b);
+  }
+  box.appendChild(row);
+  const ta=el("textarea");ta.rows=2;ta.maxLength=200;ta.placeholder="Seu comentário (opcional)";ta.value=me.c||"";ta.setAttribute("aria-label","Comentário");
+  const sv=el("button","ghost","Salvar comentário");sv.onclick=()=>{saveRate(it,me.n,ta.value.trim());toast("Comentário salvo.")};
+  box.appendChild(ta);box.appendChild(sv);
+  if(it._sh)Object.keys(it._names||{}).forEach(u=>{
+    if(u===user.uid)return;const r=it.r&&it.r[u];
+    if(r&&(r.n||r.c))box.appendChild(el("p","ov",it._names[u]+": "+(r.n?"★".repeat(r.n)+" ":"")+(r.c||"")));
+  });
+  return box;
+}
+function isDone(i){if(i.type==="movie")return !!iSeen(i);const c=tally(i);return c[1]>0&&c[0]===c[1]}
+function drawDone(done,paused){
+  const box=$("done");box.innerHTML="";
+  [["Concluídos",done],["Pausadas",paused]].forEach(([t,arr])=>{
+    if(!arr.length)return;
+    box.appendChild(el("h2",null,t+" ("+arr.length+")"));
+    const sh=el("div","shelf");
+    arr.forEach(it=>{
+      const card=el("div","card"),m=el("button","cmain");
+      if(it.poster){const im=el("img");im.src=IMG+it.poster;im.alt="";im.loading="lazy";m.appendChild(im)}else m.appendChild(el("div","ph"));
+      m.appendChild(el("b",null,it.title));
+      m.onclick=()=>{hsel=hsel===it.key?null:it.key;render();$("hdetail").scrollIntoView({behavior:"smooth",block:"start"})};
+      card.appendChild(m);sh.appendChild(card);
+    });
+    box.appendChild(sh);
+  });
+}
+function drawRecs(items){
+  const box=$("recs");
+  const src=items.filter(i=>i.status!=="wish"&&(i.type==="movie"?iSeen(i):tally(i)[0]>0)).sort((a,b)=>(b.added||0)-(a.added||0))[0];
+  if(!src){box.innerHTML="";recKey="";return}
+  if(recKey===src.key)return;
+  recKey=src.key;box.innerHTML="";
+  const have=new Set(items.map(i=>i.key));
+  addShelf(box,"Porque você assistiu "+src.title,null,async()=>{
+    const r=await tmdb("/"+src.type+"/"+src.id+"/recommendations");
+    return (r.results||[]).map(x=>toItem(x,src.type,catOf({...x,media_type:src.type}))).filter(i=>!have.has(i.key));
+  },true);
+}
+function drawStats(items){
+  const box=$("statsbox");box.innerHTML="";
+  let eps=0,mov=0,done=0,top=null;const byCat={},rs=[];
+  items.filter(i=>i.status!=="wish").forEach(i=>{
+    const k=catK(i);
+    if(i.type==="movie"){if(iSeen(i)){mov++;done++;byCat[k]=(byCat[k]||0)+1}}
+    else{const c=tally(i);eps+=c[0];byCat[k]=(byCat[k]||0)+c[0];if(c[1]&&c[0]===c[1])done++;if(c[0]&&(!top||c[0]>top.n))top={t:i.title,n:c[0]}}
+    const r=i.r&&i.r[user.uid];if(r&&r.n)rs.push(r.n);
+  });
+  const fav=Object.entries(byCat).filter(e=>e[1]>0).sort((a,b)=>b[1]-a[1])[0];
+  const cards=[["Episódios vistos",eps],["Filmes vistos",mov],["Horas assistidas (estimativa)",Math.round((eps*45+mov*110)/60)],["Títulos concluídos",done],["Categoria favorita",fav?CATL[fav[0]]:"—"],["Mais assistida",top?top.t:"—"],["Nota média",rs.length?(rs.reduce((a,b)=>a+b,0)/rs.length).toFixed(1)+" ★":"—"]];
+  const g=el("div","stats");
+  cards.forEach(([l,v])=>{const c=el("div","stat");c.appendChild(el("b",null,String(v)));c.appendChild(el("span",null,l));g.appendChild(c)});
+  box.appendChild(g);
+  box.appendChild(el("p","ov","Contas da sua lista pessoal, com estimativa de 45 minutos por episódio e 1h50 por filme."));
+}
+function exportCsv(){
+  const P=lists.find(l=>l.personal);if(!P)return;
+  const q=v=>'"'+String(v==null?"":v).replace(/"/g,'""')+'"';
+  const rows=[["Título","Tipo","Ano","Situação","Progresso","Nota","Comentário"]];
+  Object.values(P.items||{}).forEach(i=>{
+    const it={...i,_l:P.id},c=i.type==="movie"?null:tally(it),r=(i.r&&i.r[user.uid])||{};
+    const st=i.status==="wish"?"Desejo":(isDone(it)?"Concluído":(i.paused?"Pausado":"Assistindo"));
+    rows.push([i.title,catL(it),i.year,st,c?c[0]+"/"+c[1]:(iSeen(it)?"assistido":""),r.n||"",r.c||""]);
+  });
+  const blob=new Blob(["\ufeff"+rows.map(r=>r.map(q).join(",")).join("\n")],{type:"text/csv;charset=utf-8"});
+  const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="entertain-cine.csv";document.body.appendChild(a);a.click();a.remove();
+  setTimeout(()=>URL.revokeObjectURL(a.href),2000);toast("Arquivo gerado.");
+}
+function showImport(){
+  const sh=$("sheet");sh.innerHTML="";
+  sh.appendChild(el("h2",null,"Importar títulos"));
+  sh.appendChild(el("p","ov","Cole os nomes, um por linha (até 30). Cada um entra nos seus Desejos."));
+  const ta=el("textarea");ta.rows=6;ta.setAttribute("aria-label","Nomes dos títulos");ta.style.cssText="width:100%;font:inherit;padding:.6rem;border-radius:.6rem;border:1.5px solid var(--line);background:none;color:var(--ink);margin-bottom:.6rem";sh.appendChild(ta);
+  const acts=el("div","eps"),go1=el("button","btn","Importar"),c=el("button","ghost","Fechar");c.onclick=closePick;
+  go1.onclick=async()=>{
+    const names=ta.value.split("\n").map(x=>x.trim()).filter(Boolean).slice(0,30);if(!names.length)return;
+    go1.disabled=true;const P=lists.find(l=>l.personal);let ok=0;
+    for(let k=0;k<names.length;k++){
+      toast("Importando "+(k+1)+" de "+names.length+"…");
+      try{
+        const r=await tmdb("/search/multi",{query:names[k],include_adult:"false"});
+        const x=(r.results||[]).find(y=>y.media_type==="tv"||y.media_type==="movie");if(!x)continue;
+        const it=toItem(x,x.media_type,catOf(x));if(P.items&&P.items[it.key])continue;
+        it._l=P.id;it.status="wish";it.added=Date.now()-k;await put(it);ok++;
+      }catch(e){}
+    }
+    toast(ok+(ok===1?" título importado.":" títulos importados."));closePick();
+  };
+  acts.appendChild(go1);acts.appendChild(c);sh.appendChild(acts);$("pickbox").hidden=false;
+}
 function setWho(){const b=$("acct");if(b)b.textContent=dname||(user&&user.displayName)||"Conta"}
 async function renameMe(n){
   if(!n){toast("Digite um nome.");return}
@@ -559,6 +705,19 @@ function showAccount(){
   };
   c.onclick=closePick;
   acts.appendChild(sv);acts.appendChild(sw);acts.appendChild(c);sh.appendChild(acts);
+  sh.appendChild(el("h2",null,"Minhas plataformas"));
+  const pc=el("div","eps");
+  PLATS.forEach(([k,n])=>{
+    const b=el("button","ep",n);b.style.minWidth="auto";b.style.padding="0 .8rem";b.setAttribute("aria-pressed",String(myProv.includes(k)));
+    b.onclick=()=>{
+      const on=!myProv.includes(k);myProv=on?[...myProv,k]:myProv.filter(x=>x!==k);b.setAttribute("aria-pressed",String(on));
+      const P=lists.find(l=>l.personal);if(P)updateDoc(doc(db,"lists",P.id),{prov:myProv}).catch(()=>toast("Não foi possível salvar."));
+    };pc.appendChild(b);
+  });
+  sh.appendChild(pc);
+  sh.appendChild(el("h2",null,"Seus dados"));
+  const dx=el("div","eps"),ex=el("button","ghost","Exportar lista (CSV)"),im=el("button","ghost","Importar títulos");
+  ex.onclick=exportCsv;im.onclick=showImport;dx.appendChild(ex);dx.appendChild(im);sh.appendChild(dx);
   sh.appendChild(el("p","ov","Cada e-mail tem as próprias listas. Ao trocar de conta, as listas da conta atual continuam salvas nela."));
   $("pickbox").hidden=false;
 }
@@ -650,11 +809,14 @@ function saveMovie(it,v){
 
 function render(){
   const P=lists.find(l=>l.personal),L=curList();if(!L||!P)return;
+  myProv=P.prov||[];
   drawChips();
   const mineItems=Object.values(P.items||{}).sort((a,b)=>(b.added||0)-(a.added||0)).map(i=>({...i,_l:P.id}));
-  const sharedItems=lists.filter(l=>!l.personal).flatMap(l=>Object.values(l.items||{}).map(i=>({...i,_l:l.id})));
+  const sharedItems=lists.filter(l=>!l.personal).flatMap(l=>Object.values(l.items||{}).map(i=>({...i,_l:l.id,_sh:true,_names:l.names||{},_ln:l.name})));
   /* início: o que estou assistindo (lista pessoal) */
-  const watching=mineItems.filter(i=>i.status!=="wish"&&(i.type==="tv"?tally(i)[0]<tally(i)[1]||!tally(i)[1]:!i.seen));
+  const active=mineItems.filter(i=>i.status!=="wish");
+  const watching=active.filter(i=>!i.paused&&!isDone(i));
+  drawDone(active.filter(i=>isDone(i)),active.filter(i=>i.paused&&!isDone(i)));
   drawShelf(watching);
   const hd=$("hdetail");hd.innerHTML="";
   const sel=hsel&&mineItems.find(i=>i.key===hsel);
@@ -671,10 +833,11 @@ function render(){
     const CL=curList();
     $("ttl").textContent=view==="shared"&&!CL.personal?CL.name:TT[view];
     if(view==="shared"&&CL.personal){
-      $("itxt").textContent="Você ainda não tem listas compartilhadas. Toque em + Nova compartilhada.";$("inv").hidden=true;$("ren").hidden=true;$("lib").innerHTML="";
+      $("itxt").textContent="Você ainda não tem listas compartilhadas. Toque em + Nova compartilhada.";$("inv").hidden=true;$("ren").hidden=true;$("del").hidden=true;$("raveline").hidden=true;$("lib").innerHTML="";
     }else{
       $("itxt").textContent=CL.personal?"Só você vê esta lista.":"Compartilhada com "+join(Object.values(CL.names||{}))+".";
       $("inv").hidden=!!CL.personal;$("ren").hidden=!!CL.personal;
+      const own=(CL.members||[])[0]===user.uid;$("del").hidden=!!CL.personal;$("del").textContent=own?"Apagar grupo":"Sair do grupo";$("raveline").hidden=!!CL.personal;
       const its=Object.values(CL.items||{}).sort((a,b)=>(b.added||0)-(a.added||0)).filter(i=>filt==="all"||catK(i)===filt).map(i=>({...i,_l:CL.id,_sh:!CL.personal,_names:CL.names||{}}));
       drawLib(its.filter(i=>i.status!=="wish"));
     }
@@ -682,13 +845,15 @@ function render(){
   /* desejos: de todas as suas listas */
   if(view==="wish"){
     const all=[...mineItems.map(i=>({...i,_l:P.id})),...sharedItems].filter(i=>i.status==="wish"&&(filt==="all"||catK(i)===filt));
-    drawWish(all);
+    drawWishSmart(all);
   }
   /* calendário: séries de todas as suas listas */
   if(view==="cal"){
     const seen=new Set();const tvs=[...mineItems,...sharedItems].filter(i=>i.type==="tv"&&i.status!=="wish"&&!seen.has(i.key)&&seen.add(i.key));
     renderCal(tvs);
   }
+  if(view==="stats")drawStats(mineItems);
+  if(view==="home")drawRecs(mineItems);
   if(focusKey){const f=document.querySelector('[data-k="'+focusKey+'"]');if(f)f.focus();focusKey=null}
 }
 
@@ -707,6 +872,7 @@ function detailOf(it,showHead){
     body.appendChild(bx);
   }
   const tb=el("div","eps");tb.appendChild(trailerBtn(it));body.appendChild(tb);
+  body.appendChild(ratingBlock(it));
   if(it.type==="movie"){
     const sn=iSeen(it),mb=el("button","ghost mv",sn?"Assistido ✓":"Marcar como assistido");
     mb.setAttribute("aria-pressed",String(sn));mb.dataset.k=it.key+"-mv";
@@ -728,6 +894,7 @@ function detailOf(it,showHead){
     });
     sd.appendChild(eps);body.appendChild(sd);
   });
+  if(it.type==="tv"&&it.status!=="wish"){const pz=el("button","ghost",it.paused?"Retomar":"Pausar");pz.onclick=()=>updateDoc(doc(db,"lists",it._l),{["items."+it.key+".paused"]:!it.paused}).catch(()=>say("Não foi possível salvar."));const pr=el("div","eps");pr.appendChild(pz);body.appendChild(pr)}
   const rm=el("button","ghost","Remover da lista");let armed=false;
   rm.onclick=()=>{if(!armed){armed=true;rm.textContent="Toque de novo para remover";return}del(it.key,it._l)};
   body.appendChild(rm);return body;
@@ -754,11 +921,13 @@ function drawWish(items){
   items.forEach(it=>{
     const li=el("li"),g=el("div","grow");
     g.appendChild(el("strong",null,it.title+(it.year?" ("+it.year+")":"")));
-    g.appendChild(el("p",null,catL(it)+". "+(it.overview||"")));const pv=el("p","prov");g.appendChild(pv);provText(it,pv);
+    g.appendChild(el("p",null,(it._ln?"Grupo "+it._ln+". ":"")+catL(it)+". "+(it.overview||"")));const pv=el("p","prov");g.appendChild(pv);provText(it,pv);
     if(it.poster){const im=el("img","poster");im.src=IMG+it.poster;im.alt="";im.loading="lazy";li.appendChild(im)}
     const st=el("div","stack"),go=el("button","btn",it.type==="movie"?"Adicionar à lista":"Começar a assistir"),rm=el("button","ghost","Remover");
     go.onclick=()=>startWatch(it,go);rm.onclick=()=>del(it.key,it._l);
-    st.appendChild(go);st.appendChild(rm);li.appendChild(g);li.appendChild(st);ul.appendChild(li);
+    st.appendChild(go);
+    if(it._sh){const n=votes(it),on=!!(it.v&&it.v[user.uid]),vb=el("button","ghost","Votar ("+n+")");vb.setAttribute("aria-pressed",String(on));vb.onclick=()=>saveVote(it,!on);st.appendChild(vb)}
+    st.appendChild(rm);li.appendChild(g);li.appendChild(st);ul.appendChild(li);
   });
 }
 
