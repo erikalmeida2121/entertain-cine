@@ -152,6 +152,8 @@ a.ghost{display:inline-block;text-decoration:none;color:var(--ink)}
 .gb{position:absolute;top:.4rem;left:.4rem;background:#18a957;color:#fff;font-weight:800;font-size:.68rem;letter-spacing:.05em;padding:.15rem .45rem;border-radius:.4rem;box-shadow:0 1px 4px rgba(0,0,0,.4);pointer-events:none}
 .prov.free{display:inline-block;background:#18a957;color:#fff;padding:.3rem .7rem;border-radius:.6rem}
 .freeb{background:#18a957!important;color:#fff!important;border-color:#18a957!important;font-weight:700}
+.trl{order:-1;width:100%;font-size:1.05rem;padding:.85rem 1.1rem}
+.pl{position:absolute;top:.3rem;left:.3rem;width:2.2rem;height:2.2rem;border-radius:50%;background:rgba(0,0,0,.65);color:#fff;display:grid;place-items:center;font-size:.9rem;pointer-events:none}
 #splash{position:fixed;inset:0;z-index:50;background:#1B1C1F;display:grid;place-items:center;transition:opacity .5s}
 #splash.off{opacity:0;pointer-events:none}
 #splash svg{width:7rem;height:7rem;animation:pop 1.1s cubic-bezier(.2,.8,.2,1) both}
@@ -176,6 +178,7 @@ a.ghost{display:inline-block;text-decoration:none;color:var(--ink)}
       <div class="logo"><svg viewBox="0 0 512 512" width="40" height="40" fill="currentColor" aria-hidden="true"><rect x="150" y="90" width="62" height="332"/><rect x="150" y="90" width="212" height="58"/><rect x="150" y="226" width="188" height="58"/><rect x="150" y="364" width="212" height="58"/></svg><span>Entertain Cine</span></div>
       <button class="nav" data-v="home">Início</button>
       <button class="nav" data-v="free">Grátis</button>
+      <button class="nav" data-v="classics">Clássicos</button>
       <button class="nav" data-v="mine">Minha lista</button>
       <button class="nav" data-v="shared">Compartilhadas</button>
       <button class="nav" data-v="wish">Desejos</button>
@@ -229,6 +232,7 @@ a.ghost{display:inline-block;text-decoration:none;color:var(--ink)}
       <ul class="results" id="wish"></ul>
     </div>
     <div id="v-cat" class="screen" hidden><div id="catbox"></div></div>
+    <div id="v-classics" class="screen" hidden><div id="classbox"></div></div>
     <div id="v-free" class="screen" hidden><div id="freebox"></div></div>
     <div id="v-stats" class="screen" hidden><div id="statsbox"></div></div>
     <div id="v-all" class="screen" hidden>
@@ -420,8 +424,9 @@ const okI=i=>i.poster&&i.date&&i.date<=today();
 function cardsInto(box,items,force){
   items.forEach(it=>{
     const b=el("button","card");
-    if(it.poster){const im=el("img");im.src=IMG+it.poster;im.alt="";im.loading="lazy";b.appendChild(im)}else b.appendChild(el("div","ph"));
-    b.appendChild(el("b",null,it.title));b.setAttribute("aria-label",it.title+", ver opções");
+    if(it.poster){const im=el("img");im.src=it.arc?it.poster:IMG+it.poster;im.alt="";im.loading="lazy";b.appendChild(im)}else b.appendChild(el("div","ph"));
+    b.appendChild(el("b",null,it.title));b.setAttribute("aria-label",it.title+(it.arc?", assistir":", ver opções"));
+    if(it.arc){b.onclick=()=>playArchive(it.arc);b.appendChild(el("span","pl","▶"));box.appendChild(b);return}
     b.onclick=()=>showPick(it);box.appendChild(b);badgeLazy(b,it,force);
   });
 }
@@ -513,15 +518,15 @@ function drawChips(){
     });
   }
 }
-const TT={home:"Entertain Cine",free:"Grátis",stats:"Resumo",mine:"Minha lista",shared:"Compartilhadas",wish:"Desejos",cal:"Calendário"};
+const TT={home:"Entertain Cine",classics:"Clássicos",free:"Grátis",stats:"Resumo",mine:"Minha lista",shared:"Compartilhadas",wish:"Desejos",cal:"Calendário"};
 function go(v){
   view=v;
   if(v==="mine"){const P=lists.find(l=>l.personal);if(P)cur=P.id}
   if(v==="shared"){const S=lists.filter(l=>!l.personal);if(!S.some(l=>l.id===cur))cur=S.length?S[0].id:cur}
-  $("v-home").hidden=v!=="home";$("v-list").hidden=!(v==="mine"||v==="shared");$("v-wish").hidden=v!=="wish";$("v-cal").hidden=v!=="cal";$("v-cat").hidden=v!=="cat";$("v-all").hidden=v!=="all";$("v-stats").hidden=v!=="stats";$("v-free").hidden=v!=="free";
+  $("v-home").hidden=v!=="home";$("v-list").hidden=!(v==="mine"||v==="shared");$("v-wish").hidden=v!=="wish";$("v-cal").hidden=v!=="cal";$("v-cat").hidden=v!=="cat";$("v-all").hidden=v!=="all";$("v-stats").hidden=v!=="stats";$("v-free").hidden=v!=="free";$("v-classics").hidden=v!=="classics";
   $("ttl").textContent=v==="cat"?CATS[catSel].n:v==="all"?allTitle():v==="shared"&&curList()&&!curList().personal?curList().name:TT[v];
   document.querySelectorAll("#drawer .nav").forEach(b=>b.setAttribute("aria-current",(b.dataset.v&&b.dataset.v===v)||(b.dataset.c&&v==="cat"&&b.dataset.c===catSel)?"page":"false"));
-  $("drawer").classList.remove("on");$("scrim").hidden=true;window.scrollTo(0,0);render();if(v==="cat")drawCat();if(v==="all")drawAll();if(v==="free")drawFree();
+  $("drawer").classList.remove("on");$("scrim").hidden=true;window.scrollTo(0,0);render();if(v==="cat")drawCat();if(v==="all")drawAll();if(v==="free")drawFree();if(v==="classics")drawClassics();
 }
 $("burger").onclick=()=>{$("drawer").classList.add("on");$("scrim").hidden=false};
 $("scrim").onclick=()=>{$("drawer").classList.remove("on");$("scrim").hidden=true};
@@ -604,6 +609,29 @@ function drawFree(){
   box.appendChild(el("p","ov","Títulos disponíveis de graça no Brasil, geralmente com anúncios. Dados do JustWatch, via TMDB."));
   FREESETS.forEach(f=>addShelf(box,f.title,()=>{genreSel={c:"filme",g:null,free:f};go("all")},()=>f.load(1),false,true));
 }
+function playArchive(id){
+  const w=$("pwrap");w.innerHTML="";
+  const f=document.createElement("iframe");
+  f.src="https://archive.org/embed/"+encodeURIComponent(id);
+  f.allow="autoplay; fullscreen";f.allowFullscreen=true;f.title="Filme";
+  w.appendChild(f);$("player").hidden=false;
+}
+const arcItem=d=>({key:"arc"+d.identifier,arc:d.identifier,type:"movie",title:d.title||d.identifier,year:String(d.year||""),poster:"https://archive.org/services/img/"+d.identifier,overview:"",date:"1900-01-01",cat:"filme"});
+async function arcSearch(coll,page){
+  const u=new URL("https://archive.org/advancedsearch.php");
+  u.searchParams.set("q","collection:"+coll+" AND mediatype:movies");
+  ["identifier","title","year"].forEach(f=>u.searchParams.append("fl[]",f));
+  u.searchParams.append("sort[]","downloads desc");
+  u.searchParams.set("rows","24");u.searchParams.set("page",String(page||1));u.searchParams.set("output","json");
+  const r=await fetch(u);if(!r.ok)throw new Error("arc");
+  const j=await r.json();return ((j.response&&j.response.docs)||[]).map(arcItem);
+}
+const ARCSETS=[["Clássicos em destaque","feature_films"],["Cinema mudo","silent_films"],["Film noir","Film_Noir"],["Ficção científica e terror clássicos","SciFi_Horror"]];
+function drawClassics(){
+  const box=$("classbox");box.innerHTML="";
+  box.appendChild(el("p","ov","Filmes do acervo do Internet Archive, em sua maioria obras antigas de domínio público, que tocam aqui dentro. Toque numa capa para assistir."));
+  ARCSETS.forEach(([t,c])=>addShelf(box,t,()=>{genreSel={c:"filme",g:null,free:{title:t,back:"classics",load:p=>arcSearch(c,p)}};go("all")},()=>arcSearch(c,1),false,true));
+}
 function playYT(key){
   const w=$("pwrap");w.innerHTML="";
   const f=document.createElement("iframe");
@@ -619,7 +647,7 @@ function freeBtn(it){
   return a;
 }
 function trailerBtn(it){
-  const b=el("button","ghost","Trailer");
+  const b=el("button","btn trl","▶ Assistir trailer");
   b.onclick=async()=>{
     b.disabled=true;
     try{
@@ -859,7 +887,7 @@ async function loadAll(){
 }
 function drawAll(){$("grid").innerHTML="";allPage=1;$("more").hidden=false;$("ttl").textContent=allTitle();loadAll()}
 $("more").onclick=loadAll;
-$("allback").onclick=()=>go(genreSel&&genreSel.free?"free":"cat");
+$("allback").onclick=()=>go(genreSel&&genreSel.free?(genreSel.free.back||"free"):"cat");
 
 /* tela */
 function track(d,k){d.open=open.has(k);d.addEventListener("toggle",()=>{d.open?open.add(k):open.delete(k)})}
